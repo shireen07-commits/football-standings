@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Standings</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e1e5e9;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #2980b9, #1f4e79);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+        }
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+        }
+        .toggle {
+            width: auto;
+            margin: 0;
+        }
+        .toggle input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .error {
+            background: #fdf2f2;
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+        .success {
+            background: #f0f9ff;
+            border-left-color: #27ae60;
+        }
+        .loading {
+            background: #f8f9fa;
+            text-align: center;
+            color: #7f8c8d;
+        }
+        .standing-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+            transition: transform 0.2s ease;
+        }
+        .info-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .info-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 20px;
+            color: #27ae60;
+            font-weight: 700;
+        }
+        .api-demo {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+        }
+        .error-message {
+            margin-top: 10px;
+            padding: 12px;
+            background: #fdf2f2;
+            border: 1px solid #e74c3c;
+            border-radius: 4px;
+            color: #c0392b;
+            font-size: 14px;
+        }
+        .team-toggle {
+            margin-top: 10px;
+        }
+        .team-toggle button {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 10px;
+            width: auto;
+            margin-top: 0;
+        }
+        .team-toggle button:hover {
+            background: #5d6d6e;
+            transform: none;
+            box-shadow: none;
+        }
+        .api-demo h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .api-endpoint {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .standing-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚽ Football Standings Lookup</h1>
+        
+        <div class="toggle-container">
+            <label class="toggle">
+                <input type="checkbox" id="offlineMode" onchange="toggleOfflineMode()">
+                <span id="offlineStatus">Offline Mode (Disabled)</span>
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label for="countrySelect">Country:</label>
+            <select id="countrySelect" onchange="handleCountryChange()">
+                <option value="">Select a country</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="leagueSelect">League:</label>
+            <select id="leagueSelect" onchange="handleLeagueChange()" disabled>
+                <option value="">Select a league</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="teamSelect">Team:</label>
+            <select id="teamSelect" disabled style="display: block;">
+                <option value="">Select a team</option>
+            </select>
+            <input type="text" id="teamInput" placeholder="Enter team name manually" style="display: none;" disabled>
+            <div id="teamError" class="error-message" style="display: none;"></div>
+            <div class="team-toggle" id="teamToggle" style="display: none;">
+                <button type="button" id="switchToInput" onclick="switchToManualInput()">Enter team manually</button>
+                <button type="button" id="switchToSelect" onclick="switchToDropdown()" style="display: none;">Use dropdown</button>
+            </div>
+        </div>
+
+        <button onclick="handleSearch()" id="searchBtn">Get Team Standing</button>
+
+        <div id="result"></div>
+
+        <div class="api-demo">
+            <h3>🔗 API Endpoints (HATEOAS enabled)</h3>
+            <p><strong>Get Countries:</strong></p>
+            <div class="api-endpoint">GET /api/standings/countries</div>
+            
+            <p><strong>Get Leagues by Country:</strong></p>
+            <div class="api-endpoint">GET /api/standings/leagues?countryName=England</div>
+            
+            <p><strong>Get Teams by League:</strong></p>
+            <div class="api-endpoint">GET /api/standings/teams?leagueId=152</div>
+            
+            <p><strong>Get Team Standing:</strong></p>
+            <div class="api-endpoint">GET /api/standings/team?countryName=England&leagueName=Premier%20League&teamName=Manchester%20City</div>
+            
+            <p><strong>Toggle Offline Mode:</strong></p>
+            <div class="api-endpoint">POST /api/standings/offline-mode?enabled=true</div>
+
+            <p><strong>Swagger Documentation:</strong></p>
+            <div class="api-endpoint"><a href="/api/swagger-ui/index.html" style="color: #3498db;">/api/swagger-ui/index.html</a></div>
+        </div>
+    </div>
+
+    <script>
+        let countries = [];
+        let leagues = [];
+        let teams = [];
+        let offlineMode = false;
+        
+        const API_BASE = '/api/standings';
+
+        // Initialize the application
+        async function init() {
+            await loadCountries();
+            await loadOfflineStatus();
+        }
+
+        async function loadCountries() {
+            try {
+                const response = await fetch(`${API_BASE}/countries`);
+                const data = await response.json();
+                
+                if (data._embedded && data._embedded.countryList) {
+                    countries = data._embedded.countryList;
+                    populateCountrySelect();
+                }
+            } catch (error) {
+                showError('Error loading countries: ' + error.message);
+            }
+        }
+
+        function populateCountrySelect() {
+            const select = document.getElementById('countrySelect');
+            select.innerHTML = '<option value="">Select a country</option>';
+            
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.country_name;
+                option.textContent = country.country_name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadLeagues(countryName) {
+            if (!countryName) {
+                leagues = [];
+                populateLeagueSelect();
+                resetTeamSelect();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/leagues?countryName=${encodeURIComponent(countryName)}`);
+                const data = await response.json();
+                
+                if (data._embedded && data._embedded.leagueList) {
+                    leagues = data._embedded.leagueList;
+                } else {
+                    leagues = [];
+                }
+                populateLeagueSelect();
+                resetTeamSelect();
+            } catch (error) {
+                showError('Error loading leagues: ' + error.message);
+            }
+        }
+
+        function populateLeagueSelect() {
+            const select = document.getElementById('leagueSelect');
+            select.innerHTML = '<option value="">Select a league</option>';
+            select.disabled = leagues.length === 0;
+            
+            leagues.forEach(league => {
+                const option = document.createElement('option');
+                option.value = league.league_id;
+                option.textContent = league.league_name;
+                option.dataset.leagueName = league.league_name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadTeams(leagueId) {
+            if (!leagueId) {
+                teams = [];
+                populateTeamSelect();
+                return;
+            }
+            
+            // Hide any previous error and reset UI
+            hideTeamError();
+            showTeamDropdown();
+            
+            try {
+                const response = await fetch(`${API_BASE}/teams?leagueId=${encodeURIComponent(leagueId)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load teams: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data._embedded && data._embedded.teamList) {
+                    teams = data._embedded.teamList;
+                    populateTeamSelect();
+                    showTeamToggle(); // Show option to manually enter team
+                } else {
+                    teams = [];
+                    populateTeamSelect();
+                    showTeamError('No teams found for this league. Please enter the team name manually.');
+                    switchToManualInput();
+                }
+            } catch (error) {
+                teams = [];
+                populateTeamSelect();
+                showTeamError('Error loading teams for this league. Please enter the team name manually.');
+                switchToManualInput();
+            }
+        }
+
+        function populateTeamSelect() {
+            const select = document.getElementById('teamSelect');
+            select.innerHTML = '<option value="">Select a team</option>';
+            select.disabled = teams.length === 0;
+            
+            teams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.team_name;
+                option.textContent = team.team_name;
+                select.appendChild(option);
+            });
+            
+            // If teams are loaded successfully, show toggle option
+            if (teams.length > 0) {
+                showTeamToggle();
+            } else {
+                hideTeamToggle();
+            }
+        }
+
+        function resetTeamSelect() {
+            teams = [];
+            populateTeamSelect();
+            hideTeamError();
+            hideTeamToggle();
+            showTeamDropdown();
+        }
+
+        function showTeamError(message) {
+            const errorDiv = document.getElementById('teamError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideTeamError() {
+            const errorDiv = document.getElementById('teamError');
+            errorDiv.style.display = 'none';
+        }
+
+        function showTeamToggle() {
+            const toggleDiv = document.getElementById('teamToggle');
+            toggleDiv.style.display = 'block';
+        }
+
+        function hideTeamToggle() {
+            const toggleDiv = document.getElementById('teamToggle');
+            toggleDiv.style.display = 'none';
+        }
+
+        function showTeamDropdown() {
+            const select = document.getElementById('teamSelect');
+            const input = document.getElementById('teamInput');
+            const switchToInput = document.getElementById('switchToInput');
+            const switchToSelect = document.getElementById('switchToSelect');
+            
+            select.style.display = 'block';
+            input.style.display = 'none';
+            input.disabled = true;
+            switchToInput.style.display = 'inline-block';
+            switchToSelect.style.display = 'none';
+        }
+
+        function switchToManualInput() {
+            const select = document.getElementById('teamSelect');
+            const input = document.getElementById('teamInput');
+            const switchToInput = document.getElementById('switchToInput');
+            const switchToSelect = document.getElementById('switchToSelect');
+            
+            select.style.display = 'none';
+            input.style.display = 'block';
+            input.disabled = false;
+            input.focus();
+            switchToInput.style.display = 'none';
+            
+            // Only show switch back option if teams are available
+            if (teams.length > 0) {
+                switchToSelect.style.display = 'inline-block';
+            }
+        }
+
+        function switchToDropdown() {
+            const select = document.getElementById('teamSelect');
+            const input = document.getElementById('teamInput');
+            const switchToInput = document.getElementById('switchToInput');
+            const switchToSelect = document.getElementById('switchToSelect');
+            
+            select.style.display = 'block';
+            input.style.display = 'none';
+            input.disabled = true;
+            input.value = ''; // Clear manual input
+            switchToInput.style.display = 'inline-block';
+            switchToSelect.style.display = 'none';
+        }
+
+        async function loadOfflineStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/offline-mode`);
+                offlineMode = await response.json();
+                updateOfflineUI();
+            } catch (error) {
+                console.error('Error loading offline status:', error);
+            }
+        }
+
+        async function toggleOfflineMode() {
+            try {
+                const newMode = !offlineMode;
+                const response = await fetch(`${API_BASE}/offline-mode?enabled=${newMode}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    offlineMode = newMode;
+                    updateOfflineUI();
+                    showSuccess(`Offline mode ${newMode ? 'enabled' : 'disabled'}`);
+                }
+            } catch (error) {
+                showError('Error toggling offline mode: ' + error.message);
+            }
+        }
+
+        function updateOfflineUI() {
+            const checkbox = document.getElementById('offlineMode');
+            const status = document.getElementById('offlineStatus');
+            
+            checkbox.checked = offlineMode;
+            status.textContent = `Offline Mode (${offlineMode ? 'Enabled' : 'Disabled'})`;
+        }
+
+        function handleCountryChange() {
+            const countryName = document.getElementById('countrySelect').value;
+            document.getElementById('leagueSelect').value = '';
+            loadLeagues(countryName);
+        }
+
+        function handleLeagueChange() {
+            const leagueSelect = document.getElementById('leagueSelect');
+            const leagueId = leagueSelect.value;
+            document.getElementById('teamSelect').value = '';
+            document.getElementById('teamInput').value = '';
+            loadTeams(leagueId);
+        }
+
+        async function handleSearch() {
+            const countrySelect = document.getElementById('countrySelect');
+            const leagueSelect = document.getElementById('leagueSelect');
+            const teamSelect = document.getElementById('teamSelect');
+            const teamInput = document.getElementById('teamInput');
+            
+            const countryName = countrySelect.value;
+            const leagueId = leagueSelect.value;
+            
+            // Get team name from either dropdown or input field
+            let teamName = '';
+            if (teamSelect.style.display !== 'none') {
+                teamName = teamSelect.value;
+            } else {
+                teamName = teamInput.value.trim();
+            }
+            
+            // Get league name from the selected option
+            const selectedLeagueOption = leagueSelect.options[leagueSelect.selectedIndex];
+            const leagueName = selectedLeagueOption ? selectedLeagueOption.dataset.leagueName : '';
+
+            if (!countryName || !leagueId || !teamName) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/team?countryName=${encodeURIComponent(countryName)}&leagueName=${encodeURIComponent(leagueName)}&teamName=${encodeURIComponent(teamName)}`
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(data);
+                } else if (response.status === 404) {
+                    showError('Team not found in the specified league');
+                } else {
+                    showError('Error retrieving team standing');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+
+        function showLoading() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result loading">🔄 Loading team standing...</div>';
+        }
+
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result error">❌ ${message}</div>`;
+        }
+
+        function showSuccess(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result success">✅ ${message}</div>`;
+        }
+
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = `
+                <div class="result success">
+                    <h3>🏆 Team Standing Found!</h3>
+                    <div class="standing-info">
+                        <div class="info-item">
+                            <div class="info-label">Country</div>
+                            <div class="info-value">${data.countryName}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">League</div>
+                            <div class="info-value">${data.leagueName}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Team</div>
+                            <div class="info-value">${data.teamName}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Position</div>
+                            <div class="info-value">#${data.overallLeaguePosition}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Played</div>
+                            <div class="info-value">${data.overallLeaguePlayed}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Wins</div>
+                            <div class="info-value">${data.overallLeagueWins}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Draws</div>
+                            <div class="info-value">${data.overallLeagueDraws}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Losses</div>
+                            <div class="info-value">${data.overallLeagueLosses}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Goals For</div>
+                            <div class="info-value">${data.overallLeagueGoalsFor}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Goals Against</div>
+                            <div class="info-value">${data.overallLeagueGoalsAgainst}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Points</div>
+                            <div class="info-value">${data.overallLeaguePoints}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Data Source</div>
+                            <div class="info-value">${data.fromCache ? 'Cache/Offline' : 'Live API'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize the application when the page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
